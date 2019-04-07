@@ -21,8 +21,6 @@ def pModel(inputs):
         inputs = inputs,
         num_output_channels=96,
         kernel_size=(9,9),
-        stride=(1,1),
-        padding='SAME',
         num_units=48
     )
     
@@ -30,8 +28,6 @@ def pModel(inputs):
         inputs=conv2d_maxout_one,
         num_output_channels=128,
         kernel_size=(9,9),
-        stride=(1,1),
-        padding='SAME',
         num_units=64
     )
 
@@ -39,8 +35,6 @@ def pModel(inputs):
         inputs=conv2d_maxout_two,
         num_output_channels=256,
         kernel_size=(9,9),
-        stride=(1,1),
-        padding='SAME',
         num_units=128
     )
 
@@ -48,19 +42,21 @@ def pModel(inputs):
         inputs=conv2d_maxout_three,
         num_output_channels=512,
         kernel_size=(8,8),
-        stride=(1,1),
-        padding='SAME',
         num_units=128
     )
 
     conv2d_maxout_five = conv2d_layer_maxout(
-        conv2d_maxout_four,
-        144,
+        inputs=conv2d_maxout_four,
+        num_output_channels=144
         kernel_size=(1,1),
         num_units=36
     )
 
     return conv2d_maxout_five
 
+def slidingImg(image,wid):
+    length = round(wid/40)
+    resized_image = tf.image.resize_image_with_crop_or_pad(image,target_height=100,target_width=length*40)
 
-
+    for i in 
+        

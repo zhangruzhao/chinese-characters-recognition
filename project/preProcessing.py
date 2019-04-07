@@ -9,9 +9,11 @@ class Image(object):
         self.file_name = file_name
         self.DGR_HEADER={}
         self.DOC_IMG = {}
+        self.IMG_line_shape = []
         #self.DOC_IMG_data = 
 
         self.ReaddgrFile2Img()
+        #self.get_data()
 
     def ReaddgrFile2Img(self):
         #self.DGR_HEADER = {}
@@ -56,6 +58,8 @@ class Image(object):
             preRight = 0
             sumMargin = [0 for i in range(word_num)]
 
+            line_shape = {}
+
             for word_j in range(word_num):
 
                 # the annotation information of a word
@@ -95,6 +99,9 @@ class Image(object):
             #tmp_data = [255 for i in range((bottomMax-topMin+1)*(rightMax-leftMin+1))]
             DOC_IMG_line = np.ones((bottomMax-topMin+1,rightMax-leftMin+1),dtype=int)
             #print(DOC_IMG_line.shape)
+            line_shape['Hei'] = bottomMax-topMin+1
+            line_shape['Wid'] = rightMax-leftMin+1
+            self.IMG_line_shape.append(line_shape)
 
             for word_j in range(word_num):
 
@@ -141,6 +148,10 @@ class Image(object):
         self.DOC_IMG['LineInfo'] = LINE_INFO_list
         self.DOC_IMG['mapLine'] = mapLineList
 
+
+    def get_codeLen(self):
+        return int.from_bytes(self.DGR_HEADER['CodeLen'],byteorder = 'little')
+
     def get_lineNum(self):
         return int.from_bytes(self.DOC_IMG['LineNum'],byteorder='little')
 
@@ -152,10 +163,23 @@ class Image(object):
         line_data = self.DOC_IMG['mapLine'][lineInd]
         return line_label,line_data
 
-    def priImg(self,data):
-        plt.figure()
-        plt.imshow(data)
-        plt.show()
+    def get_lineShape(self,lineInd):
+        return self.IMG_line_shape[lineInd]
 
-if __name__ == '__main__':
-    temp_image = Image(r'/home/zhang/桌面/HIT-MW database/02 HIT-MW GT (binary)/黑白格式/b04010201.dgr')
+    # def get_data(self):
+    #     line_num = self.get_lineNum()
+    #     line_labels_list = []
+    #     line_data_list = []
+    #     for i in range(line_num):
+    #         line_label,line_data = self.get_lineData(i)
+    #         line_labels_list.append(line_label)
+    #         line_data_list.append(line_data)
+    #     return line_labels_list,line_data_list
+
+    # def priImg(self,data):
+    #     plt.figure()
+    #     plt.imshow(data)
+    #     plt.show()
+
+# if __name__ == '__main__':
+#     temp_image = Image(r'/home/zhang/桌面/HIT-MW database/02 HIT-MW GT (binary)/黑白格式/b04010201.dgr')

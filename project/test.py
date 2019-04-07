@@ -1,14 +1,13 @@
-class Stu(object):
-    def __init__(self):
-        self.name_list = []
-        self.name = ""
-        self.printf()
+# import numpy as np
+# a = ['ab','cd']
+# b = [x.encode() for x in a]
+# print(b)
+# a_bytes = ''.join(a).encode()
+# print(a_bytes)
 
-    def printf(self):
-        for i in range(5):
-            self.name = "zhang"
-            self.name_list.append(self.name)
-        print(self.name_list)
-
-if __name__ == '__main__':
-    stu = Stu()
+for i in range(10):
+    if i%4 < 2 :
+        t = i/4
+    else:
+        t = i/4+1
+    print(t)
