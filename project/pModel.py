@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+batch_size = 3
 def maxout(conv, num_units):
     return tf.contrib.layers.maxout(conv = conv, num_units = num_units)
 
@@ -16,7 +17,7 @@ def conv2d_layer_maxout(inputs, num_output_channels, kernel_size, stride = (1,1)
     maxout = maxout(couv2d_layer,num_units);
     return maxout
 
-def pModel(inputs):
+def cnnModel(inputs):
     conv2d_maxout_one = conv2d_layer_maxout(
         inputs = inputs,
         num_output_channels=96,
@@ -53,10 +54,30 @@ def pModel(inputs):
     )
 
     return conv2d_maxout_five
+    
+def rnn(inputs,seq_lenth):
 
-def slidingImg(image,wid):
-    length = round(wid/40)
-    resized_image = tf.image.resize_image_with_crop_or_pad(image,target_height=100,target_width=length*40)
+def slidingImage(image_batch,wid):
+    image_list = tf.split(0,image_batch,batch_size)
+    image_slice_batch_list = []
+    image_slice_expend_list = []
+    for i in range(50):
+        for batch_ind in range(batch_size):
+            image_slice = tf.slice(image_list[batch_ind],[i*100,i*40,0],[100,40,1])
+            image_slice_expend = tf.expand_dims(image_slice,0)
+            image_slice_expend_list.append(image_slice_expend)
+        image_slice_batch = tf.concat(0,image_slice_expend_list)
+        image_slice_batch_list.append(image_slice_batch)
+    return image_slice_batch_list
 
-    for i in 
-        
+def train():
+    image_slice_batch_list = slidingImage(image_batch,wid)
+    cnn_slice_output_list = []
+    for i in range(wid):
+        cnn_slice_output = cnnModel(image_slice_batch_list[i])
+        cnn_slice_output_list.append(cnn_slice_output)
+    cnn_output = tf.concat(2,cnn_slice_output_list)
+    
+
+
+            
