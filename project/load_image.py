@@ -1,5 +1,7 @@
 import tensorflow as tf
 import glob
+import matplotlib.pyplot as plt
+import numpy as np
 
 def parse_serialized(example):
     features = tf.parse_single_example(
@@ -25,37 +27,32 @@ def parse_serialized(example):
 
 def resize_image(image,hei,wid):
     reshaped_image = tf.reshape(image, [hei,wid,1])
-    resized_image = tf.image.resize_images(reshaped_image,[100,wid])
+    
+    round_wid = tf.round(wid/40)
+    resized_image = tf.image.resize_images(reshaped_image,[100,round_wid*40])
     final_image = tf.image.resize_image_with_crop_or_pad(resized_image,100,2000)
     return final_image
 
+def get_next_batch(iterator,batch_size):
+    # def priImg(data):
+    #     plt.figure()
+    #     plt.imshow(data)
+    #     plt.show()
 
-filenames = tf.placeholder(tf.string,shape=[None])
-record_dataset = tf.data.TFRecordDataset(filenames)
-record_dataset = record_dataset.map(parse_serialized)
-batch_dataset = record_dataset.shuffle(buffer_size = 10)
+    image_expend_list = []
+    for i in range(batch_size):
+        image, label, word_num, hei, wid = iterator.get_next()
+        #image_data = tf.reshape(image,[100,2000])
+        #image_data = sess.run(image_data)
+        #print(image_data.shape)
+        #priImg(image_data)
+        image_expend = tf.expand_dims(image,0)
+        image_expend_list.append(image_expend)
+    next_batch = tf.concat(axis=0,values=image_expend_list)
+    #print(next_batch)
+    return next_batch
 
-iterator = batch_dataset.make_initializable_iterator()
-init = (tf.local_variables_initializer(),tf.global_variables_initializer())
-
-image, label, word_num, hei, wid = iterator.get_next()
-with tf.Session() as sess:
-    train_filenames = glob.glob(
-    "/home/zhang/桌面/HIT-MW database/02 HIT-MW GT (binary)/tfrecord/*.tfrecords")
-    train_filenames = train_filenames[0:1]
-    sess.run(init)
-    sess.run(iterator.initializer,feed_dict = {filenames:train_filenames})
-    try:
-        while 1:
-            #img, lab, wo_num = sess.run([image, label, word_num])
-            #print(img.get_shape())
-            wid = sess.run(wid)
-            print(wid[0])
-    except tf.errors.OutOfRangeError:
-        print("end!")
-
-
-    
+#image, label, word_num, hei, wid = iterator.get_next()
 
 #record_dataset.shuffle(buffer_size = 10).batch(batch_size = 3)
 
