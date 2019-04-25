@@ -1,56 +1,31 @@
 
 
-搜索
-×
-广告
-tensorflow LSTM+CTC实现端到端的不定长数字串识别
-96  某杰 
-2017.08.22 12:01* 字数 1677 阅读 31040评论 27喜欢 33赞赏 1
-上一篇文章tensorflow 实现端到端的OCR：二代身份证号识别实现了定长18位数字串的识别，并最终达到了98%的准确率。
-但是实际应用场景中，常常需要面对无法确定字串长度的情况，这时候除了需要对识别字符模型参数进行训练外，还需要对字符划分模型进行训练，本文实现了上文提到的方法2，使用LSTM+CTC识别不定长的数字串。
+# ctc_loss(
+#     labels,
+#     inputs,
+#     sequence_length,
+#     preprocess_collapse_repeated=False,
+#     ctc_merge_repeated=True,
+#     time_major=True
+# )
+# inputs: 输入（训练）数据，是一个三维float型的数据结构[max_time_step , batch_size , num_classes]，当修改time_major = False时，[batch_size,max_time_step,num_classes]。
+# 总体的数据流：
+# image_batch
+# ->[batch_size,max_time_step,num_features]->lstm
+# ->[batch_size,max_time_step,cell.output_size]->reshape
+# ->[batch_sizemax_time_step,num_hidden]->affine projection AW+b
+# ->[batch_size*max_time_step,num_classes]->reshape
+# ->[batch_size,max_time_step,num_classes]->transpose
+# ->[max_time_step,batch_size,num_classes]
 
-环境依赖
-环境依赖与上一篇基本一致
+# 本文输入图片大小是(32,256)，则num_features是32，max_time_step是256 代表最大划分序列，其中cell.output_size == num_hidden，num_hidden及num_classes的值见下文常量定义
 
-知识准备
-LSTM（长短时记忆网络）：是一种特殊结构的RNN，能够解决普通RNN不能解决的长期依赖问题。具体介绍可参看这篇译文[译] 理解 LSTM 网络
+# labels：OCR识别结果的标签，是一个稀疏矩阵，下文训练数据生成部分会有相关解释
 
-CTC ：Connectionist Temporal Classifier 一般译为联结主义时间分类器 ，适合于输入特征和输出标签之间对齐关系不确定的时间序列问题，CTC可以自动端到端地同时优化模型参数和对齐切分的边界。
-比如本文例子，32 x 256大小的图片，最大可切分256列，也就是输入特征最大256，而输出标签的长度最大设定是18，这种就可以用CTC模型进行优化。
-关于CTC模型，笔者认为可以这样理解，假设32 x 256的图片，数字串标签是"123"，把图片按列切分（CTC会优化切分模型），然后分出来的每块再去识别数字，找出这块是每个数字或者特殊字符的概率（无法识别的则标记为特殊字符"-"），这样就得到了基于输入特征序列（图片）的每一个相互独立建模单元个体（划分出来的块）（包括“-”节点在内）的类属概率分布。基于概率分布，算出标签序列是"123"的概率P（123），当然这里设定"123"的概率为所有子序列之和，这里子序列包括'-'和'1'、'2'、'3'的连续重复，如下图所示：
+# sequence_length: 一维数据，[max_time_step,…,max_time_step]长度为batch_size,值为max_time_step
 
-所有子序列概率和
-本文采用TF框架的CTC封装实现，tf.nn.ctc_loss，我们最后的目标是最小化ctc_loss
-官方定义如下：
+# 因此我们需要做的就是将图片的标签label（需要OCR出的结果），图片数据，以及图片的长度转换为labels，inputs，和sequence_length
 
-ctc_loss(
-    labels,
-    inputs,
-    sequence_length,
-    preprocess_collapse_repeated=False,
-    ctc_merge_repeated=True,
-    time_major=True
-)
-inputs: 输入（训练）数据，是一个三维float型的数据结构[max_time_step , batch_size , num_classes]，当修改time_major = False时，[batch_size,max_time_step,num_classes]。
-总体的数据流：
-image_batch
-->[batch_size,max_time_step,num_features]->lstm
-->[batch_size,max_time_step,cell.output_size]->reshape
-->[batch_sizemax_time_step,num_hidden]->affine projection AW+b
-->[batch_size*max_time_step,num_classes]->reshape
-->[batch_size,max_time_step,num_classes]->transpose
-->[max_time_step,batch_size,num_classes]
-
-本文输入图片大小是(32,256)，则num_features是32，max_time_step是256 代表最大划分序列，其中cell.output_size == num_hidden，num_hidden及num_classes的值见下文常量定义
-
-labels：OCR识别结果的标签，是一个稀疏矩阵，下文训练数据生成部分会有相关解释
-
-sequence_length: 一维数据，[max_time_step,…,max_time_step]长度为batch_size,值为max_time_step
-
-因此我们需要做的就是将图片的标签label（需要OCR出的结果），图片数据，以及图片的长度转换为labels，inputs，和sequence_length
-
-正文
-定义一些常量
 #定义一些常量
 #图片大小，32 x 256
 OUTPUT_SHAPE = (32,256)
@@ -130,7 +105,7 @@ def sparse_tuple_from(sequences, dtype=np.int32):
     values = []
     
     for n, seq in enumerate(sequences):
-        indices.extend(zip([n] * len(seq), xrange(len(seq))))
+        indices.extend(zip([n] * len(seq), range(len(seq))))
         values.extend(seq)
  
     indices = np.asarray(indices, dtype=np.int64)
